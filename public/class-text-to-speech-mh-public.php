@@ -39,7 +39,7 @@ class Text_To_Speech_Mh_Public {
 	 * @var      string    $version    The current version of this plugin.
 	 */
 	private $version;
-
+	private $settings;
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -51,7 +51,9 @@ class Text_To_Speech_Mh_Public {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
+		$settings = get_option('tts_settings', false);
+		$this->settings = json_decode($settings, true);
+		
 		add_filter( 'the_content', [$this, 'filter_the_content_in_the_main_loop'], 1 );
 		 
 		
@@ -61,15 +63,18 @@ class Text_To_Speech_Mh_Public {
 	 
 	    // Check if we're inside the main loop in a single Post.
 
-	    if ( is_singular() ) {
+	    if ( is_singular() && $this->settings['active'] === 'true') {
+	    		// unset($this->settings['zalo_tokens']);
+	    		
 		    	$id = get_the_ID();
 	    		$tts_file = get_post_meta($id , 'tts_audio_', true);
 	    		if($tts_file):
-	    		$thumbnail = get_the_post_thumbnail_url($id);
+	    		$thumbnail = get_the_post_thumbnail_url($id, 'post-thumbnail');
 	    		if(!$thumbnail)
 	    			$thumbnail = 'https://imgv3.fotor.com/images/side/sideimage-one-tap-enhance.jpg';
 	    		ob_start();
 	        ?>
+
 	        	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.0/dist/APlayer.min.css">
 	        	<script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.0/dist/APlayer.min.js"></script>
 	        	<div id="aplayer"></div>
@@ -83,7 +88,17 @@ class Text_To_Speech_Mh_Public {
 	        		        cover: '<?php echo $thumbnail ?>'
 	        		    }]
 	        		});
+	        		<?php if($this->settings['autoplay'] === 'true'): ?>
+	        			let isPlayed = false;
+	        			document.addEventListener('scroll', (e) => {
+	        				if(!isPlayed){
+	        					ap.play();
+	        					isPlayed = true;
+	        				}
+	        			});
+	        		<?php endif ?>
 	        	</script>
+
 
 	        	<?php echo $content ?>
 	        <?php
